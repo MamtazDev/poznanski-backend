@@ -1,0 +1,14 @@
+# Ignore node_modules directory
+node_modules/
+
+# Ignore environment configuration file
+.env
+
+# Ignore log files
+*.log
+
+# Ignore build output
+/build/
+/dist/
+public/assets/img/*
+package-lock.json
