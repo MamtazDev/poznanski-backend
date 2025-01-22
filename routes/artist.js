@@ -88,6 +88,7 @@ router.get("/data", async (req, res) => {
 router.post("/", async (req, res) => {
   try {
     const newData = req.body;
+    console.log("newData", newData);
     if (newData) {
       console.log(newData);
       const data = await Artist.find({ name: newData.name });
@@ -111,15 +112,16 @@ router.post("/", async (req, res) => {
             newData.profileImg.indexOf(";")
           );
           const fileName = `artist_${Date.now()}.${fileType}`;
-          const store = await saveImage(newData.profileImg, filePath, fileName);
-          console.log(store);
-          if (store) {
-            newArtist.profileImg = fileName;
-          } else {
-            return res
-              .status(200)
-              .json({ success: false, message: "Updating is failed" });
-          }
+          //   const store = await saveImage(newData.profileImg, filePath, fileName);
+          //   console.log(store);
+          //   if (store) {
+          //     newArtist.profileImg = fileName;
+          //   } else {
+          //     return res
+          //       .status(200)
+          //       .json({ success: false, message: "Updating is failed" });
+          //   }
+          newArtist.profileImg = "asf";
         }
         newArtist
           .save()
@@ -131,6 +133,8 @@ router.post("/", async (req, res) => {
             return res.status(200).json({ err, success: false });
           });
       }
+    } else {
+      console.log("There is some error!");
     }
   } catch (err) {
     console.log(err);
@@ -202,21 +206,17 @@ router.delete("/", async (req, res) => {
   try {
     const result = await Artist.deleteOne({ _id: productId });
     if (result.deletedCount === 0) {
-      return res
-        .status(200)
-        .json({
-          success: true,
-          deleted: false,
-          message: "No matching news found for deletion!",
-        });
+      return res.status(200).json({
+        success: true,
+        deleted: false,
+        message: "No matching news found for deletion!",
+      });
     } else {
-      res
-        .status(200)
-        .json({
-          success: true,
-          deleted: true,
-          message: "Deleted Successfully!",
-        });
+      res.status(200).json({
+        success: true,
+        deleted: true,
+        message: "Deleted Successfully!",
+      });
     }
   } catch (err) {
     console.log(err);

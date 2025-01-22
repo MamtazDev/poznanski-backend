@@ -1,15 +1,20 @@
-const express = require('express');
-const { saveImage } = require('../consts/saveImage.js');
-const { createNewsProposal, newsProposalRules, getNewsProposals } = require('../controllers/news.js');
+const express = require("express");
+const { saveImage } = require("../consts/saveImage.js");
+const {
+  createNewsProposal,
+  newsProposalRules,
+  getNewsProposals,
+} = require("../controllers/news.js");
+const news = require("../models/news.js");
 
 const router = express();
 
 // create proposal from unknown user:
-const newsProposalRoute = '/create/unknown';
+const newsProposalRoute = "/create/unknown";
 router.post(newsProposalRoute, newsProposalRules, createNewsProposal);
 
 // get all proposals from unknown:
-const getNewsProposalsRoute = '/get/unknown';
+const getNewsProposalsRoute = "/get/unknown";
 router.get(getNewsProposalsRoute, getNewsProposals);
 
 // router.get('/all', async (req, res) => {
@@ -23,21 +28,24 @@ router.get(getNewsProposalsRoute, getNewsProposals);
 //     }
 // });
 
-// router.get('/id', async (req, res) => {
-//     try {
-//         const { id } = req.query;
-//         const news = await News.find({ _id: id });
-//         const relatedNews = await News.find({ _id: { $ne: id } }).sort({ date: -1 }).limit(5);
-//         if (news && relatedNews) {
-//             return res.status(200).json({ news, relatedNews, success: true });
-//         } else {
-//             return res.status(200).json({ success: false });
-//         }
-//     } catch (err) {
-//         console.log(err);
-//         return res.status(400).json({ success: false, error: err });
-//     }
-// })
+router.get("/id", async (req, res) => {
+  try {
+    const { id } = req.query;
+    const news = await news.find({ _id: id });
+    const relatedNews = await news
+      .find({ _id: { $ne: id } })
+      .sort({ date: -1 })
+      .limit(5);
+    if (news && relatedNews) {
+      return res.status(200).json({ news, relatedNews, success: true });
+    } else {
+      return res.status(200).json({ success: false });
+    }
+  } catch (err) {
+    console.log(err);
+    return res.status(400).json({ success: false, error: err });
+  }
+});
 
 // router.get('/', async (req, res) => {
 //     try {
@@ -77,54 +85,55 @@ router.get(getNewsProposalsRoute, getNewsProposals);
 //     }
 // });
 
-// router.post('/', async (req, res) => {
-//     try {
-//         const data = req.body;
-//         if (data) {
-//             console.log(data);
-//             const result = await News.find({ title: data.title });
-//             if (result?.length) {
-//                 return res.status(200).json({ success: false, message: 'This news is already posted' });
-//             } else {
-//                 const newContent = await Promise.all(data.content?.map(async (item, idx) => {
-//                     let updatedItem = item;
-//                     if (item.img === "") {
-//                         updatedItem.img = "";
-//                     } else {
-//                         const fileType = item.img.substring(item.img.indexOf('/') + 1, item.img.indexOf(';'));
-//                         const fileName = `news_${Date.now()}_${idx}.${fileType}`;
-//                         const store = await saveImage(item.img, filePath, fileName);
-//                         if (store) {
-//                             updatedItem.img = fileName;
-//                         } else {
-//                             throw new Error('Failed to save image');
-//                         }
-//                     }
-//                     return updatedItem;
-//                 }));
-//                 const newArticle = News({
-//                     title: data.title,
-//                     tag: data.feature,
-//                     date: data.date,
-//                     content: newContent,
-//                     link: data.link
-//                 });
-//                 newArticle.save()
-//                     .then((result) => {
-//                         console.log(result);
-//                         return res.status(200).json({ data: result, success: true });
-//                     })
-//                     .catch((err) => {
-//                         return res.status(200).json({ err, success: false });
-//                     })
-//             }
-//         }
+router.post("/", async (req, res) => {
+  try {
+    const data = req.body;
+    console.log("data", data);
 
-//     } catch (err) {
-//         console.log(err);
-//         return res.status(400).json({ success: false, error: err });
-//     }
-// });
+    if (!data.title || !data.content) {
+      return res.status(400).json({
+        success: false,
+        message: "Title and content are required fields.",
+      });
+    }
+
+    // Check if the news article already exists
+    const existingNews = await news.findOne({ title: data.title });
+    if (existingNews) {
+      return res.status(200).json({
+        success: false,
+        message: "This news is already posted.",
+      });
+    }
+
+    // Convert content array to a JSON string if it is an array
+    const contentString = Array.isArray(data.content)
+      ? JSON.stringify(data.content)
+      : data.content;
+
+    // Create a new article
+    const newArticle = new news({
+      title: data.title,
+      intro: data.intro,
+      content: contentString,
+      files: data.files,
+      nickname: data.nickname,
+      email: data.email,
+      tags: data.tags,
+      date: data.date,
+      confirmed: data.confirmed,
+      confirmationToken: data.confirmationToken,
+      commentsSection: data.commentsSection,
+    });
+
+    // Save the article to the database
+    const savedArticle = await newArticle.save();
+    return res.status(200).json({ success: true, data: savedArticle });
+  } catch (err) {
+    console.error("Error:", err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
 
 // router.put('/', async (req, res) => {
 //     try {
