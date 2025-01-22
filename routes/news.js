@@ -17,16 +17,16 @@ router.post(newsProposalRoute, newsProposalRules, createNewsProposal);
 const getNewsProposalsRoute = "/get/unknown";
 router.get(getNewsProposalsRoute, getNewsProposals);
 
-// router.get('/all', async (req, res) => {
-//     try {
-//         const products = await News.find();
-//         console.log("news:", products.length);
-//         return res.status(200).json({ news: products, success: true });
-//     } catch (err) {
-//         console.log(err);
-//         return res.status(400).json({ success: false, error: err });
-//     }
-// });
+router.get("/all", async (req, res) => {
+  try {
+    const products = await news.find();
+    console.log("news:", products.length);
+    return res.status(200).json({ news: products, success: true });
+  } catch (err) {
+    console.log(err);
+    return res.status(400).json({ success: false, error: err });
+  }
+});
 
 router.get("/id", async (req, res) => {
   try {
