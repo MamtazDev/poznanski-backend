@@ -110,7 +110,8 @@ fs.readdirSync("./routes").forEach((file) => {
 
 //images
 app.use("/img", express.static(path.join("public", "assets", "img")));
-
+// Serve uploaded files statically
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 // test
 app.get("/api", (request, response) => {
   response.json({

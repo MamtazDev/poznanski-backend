@@ -28,22 +28,29 @@ router.get("/all", async (req, res) => {
   }
 });
 
-router.get("/id", async (req, res) => {
+router.get("/:id", async (req, res) => {
   try {
-    const { id } = req.query;
-    const news = await news.find({ _id: id });
+    const { id } = req.params; // Use req.params to get the ID from the URL
+    const newsItem = await news.findOne({ _id: id }); // Use findOne for a single document
     const relatedNews = await news
-      .find({ _id: { $ne: id } })
-      .sort({ date: -1 })
-      .limit(5);
-    if (news && relatedNews) {
-      return res.status(200).json({ news, relatedNews, success: true });
+      .find({ _id: { $ne: id } }) // Exclude the current news item
+      .sort({ date: -1 }) // Sort by date in descending order
+      .limit(5); // Limit to 5 related news items
+
+    if (newsItem) {
+      return res.status(200).json({
+        news: newsItem,
+        relatedNews,
+        success: true,
+      });
     } else {
-      return res.status(200).json({ success: false });
+      return res
+        .status(404)
+        .json({ success: false, message: "News not found" });
     }
   } catch (err) {
-    console.log(err);
-    return res.status(400).json({ success: false, error: err });
+    console.error(err);
+    return res.status(500).json({ success: false, error: err.message });
   }
 });
 
