@@ -139,10 +139,10 @@ const userLogin = async (req, res) => {
     }
     req.logIn(user, async (err) => {
       if (err) {
-        console.log("Login error:", err);
+        // console.log("Login error:", err);
         return res.status(500).json({ message: "Internal Server Error" });
       }
-      console.log("Login successful:", user);
+      // console.log("Login successful:", user);
 
       // Generate tokens
       const accessToken = generateAccessToken(user);
@@ -165,6 +165,7 @@ const userLogin = async (req, res) => {
 
       // Send a response with the accessToken and a success message
       return res.json({
+        user,
         message: "Logged in successfully",
         accessToken: accessToken, // Optionally send the accessToken in response for immediate use
       });
@@ -314,6 +315,7 @@ const getUsers = async (req, res) => {
 const editUser = async (req, res) => {
   const userId = req.params.id; // Extract user ID from request parameters
   const updatedData = req.body; // Extract data to update from request body
+  console.log("updatedData", updatedData, userId);
 
   try {
     // Find the user by ID and update with new data
