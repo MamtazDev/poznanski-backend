@@ -301,6 +301,59 @@ const resetPassword = async (req, res) => {
   }
 };
 
+const getUsers = async (req, res) => {
+  try {
+    const users = await User.find(); // Fetch all users from the database
+    res.status(200).json(users); // Send the list of users as a JSON response
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+const editUser = async (req, res) => {
+  const userId = req.params.id; // Extract user ID from request parameters
+  const updatedData = req.body; // Extract data to update from request body
+
+  try {
+    // Find the user by ID and update with new data
+    const updatedUser = await User.findByIdAndUpdate(userId, updatedData, {
+      new: true, // Return the updated document
+      runValidators: true, // Ensure validations are run on the updated data
+    });
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" }); // User not found
+    }
+
+    res.status(200).json(updatedUser); // Send the updated user data as a JSON response
+  } catch (error) {
+    console.error("Error updating user:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+const deleteUser = async (req, res) => {
+  const userId = req.params.id;
+  const updatedData = req.body;
+
+  try {
+    // Find the user by ID and update with new data
+    const updatedUser = await User.findByIdAndUpdate(userId, updatedData, {
+      new: true, // Return the updated document
+      runValidators: true, // Ensure validations are run on the updated data
+    });
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" }); // User not found
+    }
+
+    res.status(200).json(updatedUser); // Send the updated user data as a JSON response
+  } catch (error) {
+    console.error("Error updating user:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
 module.exports = {
   verifyAuth,
   refreshToken,
@@ -314,4 +367,6 @@ module.exports = {
   userLoginRules,
   forgetPasswordRules,
   resetPasswordRules,
+  getUsers,
+  editUser,
 };
