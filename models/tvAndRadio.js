@@ -20,6 +20,7 @@ const tvAndRadioSchema = new Schema(
       required: true,
     },
     tags: { type: String, required: true },
+    thumbnail: { type: String, required: false },
     date: { type: Date, required: true },
     confirmed: { type: Boolean, default: false },
     confirmationToken: { type: String },
