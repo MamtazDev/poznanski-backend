@@ -3,57 +3,61 @@ const Artist = require("../models/artist.js");
 const Product = require("../models/product.js");
 const { publicUrl, filePath } = require("../consts/constant.js");
 const { saveImage } = require("../consts/saveImage.js");
+const TvAndRadio = require("../models/tvAndRadio.js");
 
 const router = express.Router();
 
 router.get("/", async (req, res) => {
   try {
-    const { rowsPerPage, curPage, filter } = req.query;
-    console.log("rows:", rowsPerPage, curPage);
-    const start = parseInt(rowsPerPage, 10) * (parseInt(curPage, 10) - 1);
-    let all = 0;
-    let data = [];
-    if (filter) {
-      const artists = await Artist.find({
-        name: { $regex: filter, $options: "i" },
+    const {
+      rowsPerPage = 10, // Default rows per page
+      curPage = 1, // Default to the first page
+      filter = "", // Default to no filter
+      sortField = "star", // Default sorting field
+      sortOrder = -1, // Default sorting order (descending)
+    } = req.query;
+
+    const limit = parseInt(rowsPerPage, 10);
+    const skip = limit * (parseInt(curPage, 10) - 1);
+
+    // Build query for artists based on the filter
+    const artistQuery = filter
+      ? { name: { $regex: filter, $options: "i" } }
+      : {};
+
+    // Fetch paginated artists and total count in parallel
+    const [artists, totalArtists] = await Promise.all([
+      Artist.find(artistQuery)
+        .sort({ [sortField]: parseInt(sortOrder, 10) }) // Dynamic sorting
+        .skip(skip)
+        .limit(limit),
+      Artist.countDocuments(artistQuery), // Total matching artists
+    ]);
+
+    // Prepare the data with related products
+    const data = await Promise.all(
+      artists.map(async (artist) => {
+        const products = await TvAndRadio.find({ artists: artist._id }).limit(
+          8
+        );
+        return {
+          artist,
+          products,
+        };
       })
-        .sort({ star: -1 })
-        .skip(start)
-        .limit(rowsPerPage);
-      const allArtists = await Artist.find({
-        name: { $regex: filter, $options: "i" },
-      });
-      all = allArtists.length;
-      await Promise.all(
-        artists.map(async (item) => {
-          const product = await Product.find({ artist: item.name }).limit(8);
-          data.push({
-            artist: item,
-            products: product,
-          });
-        })
-      );
-    } else {
-      const artists = await Artist.find({})
-        .sort({ star: -1 })
-        .skip(start)
-        .limit(rowsPerPage);
-      const allArtists = await Artist.find();
-      all = allArtists.length;
-      await Promise.all(
-        artists.map(async (item) => {
-          const product = await Product.find({ artist: item.name }).limit(8);
-          data.push({
-            artist: item,
-            products: product,
-          });
-        })
-      );
-    }
-    return res.status(200).json({ data, all, success: true });
+    );
+
+    // Send the response
+    return res.status(200).json({
+      data,
+      total: totalArtists,
+      currentPage: parseInt(curPage, 10),
+      totalPages: Math.ceil(totalArtists / limit),
+      success: true,
+    });
   } catch (err) {
-    console.log(err);
-    return res.status(400).json({ success: false, error: err });
+    console.error(err);
+    return res.status(400).json({ success: false, error: err.message });
   }
 });
 
