@@ -77,8 +77,42 @@ exports.deleteMaterial = async (req, res) => {
 // Get all materials
 exports.getAllMaterials = async (req, res) => {
   try {
-    const materials = await Material.find();
-    res.status(200).json(materials);
+    const {
+      sortBy = "createdAt",
+      order = "asc",
+      page = 1,
+      limit = 10,
+      startDate,
+      endDate,
+    } = req.query;
+
+    // Parse page and limit into numbers
+    const pageNumber = parseInt(page, 10);
+    const pageSize = parseInt(limit, 10);
+
+    // Build query conditions
+    const query = {};
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) query.createdAt.$gte = new Date(startDate);
+      if (endDate) query.createdAt.$lte = new Date(endDate);
+    }
+
+    // Fetch materials with sorting, filtering, and pagination
+    const materials = await Material.find(query)
+      .sort({ [sortBy]: order === "desc" ? -1 : 1 })
+      .skip((pageNumber - 1) * pageSize)
+      .limit(pageSize);
+
+    // Count total materials for pagination metadata
+    const totalMaterials = await Material.countDocuments(query);
+
+    res.status(200).json({
+      materials,
+      totalMaterials,
+      totalPages: Math.ceil(totalMaterials / pageSize),
+      currentPage: pageNumber,
+    });
   } catch (err) {
     res
       .status(500)
