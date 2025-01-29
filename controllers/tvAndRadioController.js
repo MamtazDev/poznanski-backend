@@ -37,15 +37,17 @@ exports.getTvAndRadioById = async (req, res) => {
 // Update
 exports.updateTvAndRadio = async (req, res) => {
   try {
-    const updatedRecord = await TvAndRadio.findByIdAndUpdate(
-      req.params.id,
-      { $set: req.body },
-      { new: true, runValidators: true }
-    ).populate("artists userId");
-    if (!updatedRecord)
-      return res.status(404).json({ error: "Record not found" });
-    res.status(200).json(updatedRecord);
+    console.log("Request Body:", req.body, "id:", req.params.id);
+
+    const record = await TvAndRadio.findOne({ _id: req.params.id });
+    if (!record) return res.status(404).json({ error: "Record not found" });
+    Object.assign(record, req.body);
+    await record.save();
+
+    console.log("Updated Record:", record);
+    res.status(200).json(record);
   } catch (error) {
+    console.error("Update Error:", error);
     res.status(400).json({ error: error.message });
   }
 };
