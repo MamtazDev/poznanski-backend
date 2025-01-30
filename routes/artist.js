@@ -146,62 +146,32 @@ router.post("/", async (req, res) => {
   }
 });
 
-router.put("/", async (req, res) => {
+router.put("/:id", async (req, res) => {
   try {
-    const newData = req.body;
-    console.log(newData);
-    if (newData) {
-      const data = await Artist.findOne({ _id: newData.id });
-      if (data) {
-        data.name = newData.name;
-        data.description = newData.description;
-        data.star = newData.star;
-        if (newData.profileImg !== `${publicUrl}${data.profileImg}`) {
-          if (newData.profileImg === "") {
-            data.profileImg = "";
-          } else {
-            const fileType = newData.profileImg.substring(
-              newData.profileImg.indexOf("/") + 1,
-              newData.profileImg.indexOf(";")
-            );
-            const fileName = `news_${newData.id}_${Date.now()}.${fileType}`;
-            const store = await saveImage(
-              newData.profileImg,
-              filePath,
-              fileName
-            );
-            console.log(store);
-            if (store) {
-              data.profileImg = fileName;
-            } else {
-              return res
-                .status(200)
-                .json({ success: false, message: "Updating is failed" });
-            }
-          }
-        }
-        data
-          .save()
-          .then((result) => {
-            console.log(result);
-            return res.status(200).json({ data: result, success: true });
-          })
-          .catch((err) => {
-            return res.status(200).json({ err, success: false });
-          });
-      } else {
-        return res
-          .status(200)
-          .json({ success: false, message: "Can't find the data" });
-      }
-    } else {
+    const { id } = req.params;
+    const { name, profileImg, description, star } = req.body;
+
+    // Validate request body
+    if (!name || !profileImg) {
       return res
-        .status(200)
-        .json({ success: false, message: "Send data correctly" });
+        .status(400)
+        .json({ message: "Name and profileImg are required." });
     }
-  } catch (err) {
-    console.log(err);
-    res.status(400).json({ err });
+
+    // Find and update the artist
+    const updatedArtist = await Artist.findByIdAndUpdate(
+      id,
+      { name, profileImg, description, star },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedArtist) {
+      return res.status(404).json({ message: "Artist not found." });
+    }
+
+    res.status(200).json(updatedArtist);
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 });
 

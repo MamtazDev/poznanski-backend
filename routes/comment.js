@@ -1,12 +1,16 @@
-const express = require('express');
-const { verifyAuth } = require('../controllers/auth.js');
-const { addCommentOrReply, getCommentsAndReplies, getPaginatedComments } = require('../controllers/comments.js');
+const express = require("express");
+const { verifyAuth } = require("../controllers/auth.js");
+const {
+  addCommentOrReply,
+  getCommentsAndReplies,
+  getPaginatedComments,
+} = require("../controllers/comments.js");
 
 const router = express();
 
-router.post('/:postModel/:postId', verifyAuth, addCommentOrReply);
-router.get('/:postModel/:postId', getCommentsAndReplies);
-router.get('/:postModel/:postId/:page', getPaginatedComments);
+router.post("/:postModel/:postId", verifyAuth, addCommentOrReply);
+router.get("/:postModel/:postId", getCommentsAndReplies);
+router.get("/:postModel/:postId/:page", getPaginatedComments);
 // router.get('/data', async (req, res) => {
 //     try {
 //         const { entityId } = req.query;
