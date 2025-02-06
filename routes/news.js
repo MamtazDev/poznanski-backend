@@ -47,6 +47,13 @@ router.get("/all", async (req, res) => {
       ];
     }
 
+    // Apply filter based on type (confirmed or proposed)
+    if (!type) {
+      query.confirmed = true;  // Default filter is confirmed news
+    } else if (type === "proposed") {
+      query.confirmed = false;  // Filter for proposed (unconfirmed) news
+    }
+
     // Apply date range filtering if startDate or endDate is provided
     if (startDate || endDate) {
       query.createdAt = {};

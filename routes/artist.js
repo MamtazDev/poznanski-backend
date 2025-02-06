@@ -4,6 +4,7 @@ const Product = require("../models/product.js");
 const { publicUrl, filePath } = require("../consts/constant.js");
 const { saveImage } = require("../consts/saveImage.js");
 const TvAndRadio = require("../models/tvAndRadio.js");
+const Album = require("../models/album.js");
 
 const router = express.Router();
 
@@ -78,6 +79,29 @@ router.get("/", async (req, res) => {
   } catch (err) {
     console.error(err);
     return res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+
+router.get("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Find the artist by ID
+    const artist = await Artist.findById(id);
+
+    if (!artist) {
+      return res.status(404).json({ message: "Artist not found with the given ID." });
+    }
+
+    // Find all radio records where artistId matches this artist's ID
+    const radios = await TvAndRadio.find({ artists: id });
+    const album = await Album.find({ artists: id });
+
+    res.status(200).json({ artist, radios, album });
+  } catch (error) {
+    console.error(error); // For debugging purposes
+    res.status(500).json({ message: "Server error occurred while fetching the artist.", error: error.message });
   }
 });
 
