@@ -111,11 +111,11 @@ router.post("/", async (req, res) => {
         if (newData.img === "") {
           newArtist.img = "";
         } else {
-          const fileType = newData.profileImg.substring(
-            newData.profileImg.indexOf("/") + 1,
-            newData.profileImg.indexOf(";")
-          );
-          const fileName = `artist_${Date.now()}.${fileType}`;
+          // const fileType = newData.profileImg.substring(
+          //   newData.profileImg.indexOf("/") + 1,
+          //   newData.profileImg.indexOf(";")
+          // );
+          // const fileName = `artist_${Date.now()}.${fileType}`;
           //   const store = await saveImage(newData.profileImg, filePath, fileName);
           //   console.log(store);
           //   if (store) {
@@ -125,7 +125,7 @@ router.post("/", async (req, res) => {
           //       .status(200)
           //       .json({ success: false, message: "Updating is failed" });
           //   }
-          newArtist.profileImg = "asf";
+          // newArtist.profileImg = "asf";
         }
         newArtist
           .save()

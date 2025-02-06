@@ -14,9 +14,7 @@ exports.createAlbum = async (req, res) => {
 // Get all albums
 exports.getAllAlbums = async (req, res) => {
   try {
-    const albums = await Album.find()
-      .populate("artists userId") // Populate references for artists and user
-      .populate("songs"); // Populate songs (if referenced)
+    const albums = await Album.find().populate(["songs", "userId"]);
     res.status(200).json(albums);
   } catch (error) {
     res.status(500).json({ error: error.message });
