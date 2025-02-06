@@ -10,36 +10,56 @@ const router = express.Router();
 router.get("/", async (req, res) => {
   try {
     const {
-      rowsPerPage = 10, // Default rows per page
-      curPage = 1, // Default to the first page
-      filter = "", // Default to no filter
-      sortField = "star", // Default sorting field
-      sortOrder = -1, // Default sorting order (descending)
+      sortBy = "createdAt",  // Default sort field
+      order = "asc",          // Default order
+      page = 1,               // Default to the first page
+      limit = 10,             // Default limit
+      search,                 // Search query
+      startDate,              // Date range filtering start
+      endDate,                // Date range filtering end
+      type,                   // Filter type (confirmed or proposed)
     } = req.query;
 
-    const limit = parseInt(rowsPerPage, 10);
-    const skip = limit * (parseInt(curPage, 10) - 1);
+    const pageNumber = parseInt(page, 10);
+    const pageSize = parseInt(limit, 10);
+    const skip = pageSize * (pageNumber - 1);
 
-    // Build query for artists based on the filter
-    const artistQuery = filter
-      ? { name: { $regex: filter, $options: "i" } }
-      : {};
+    // Build query for artists based on search and filters
+    const artistQuery = {};
+
+    // Search filter for name, description
+    if (search) {
+      artistQuery.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    // Filter by "confirmed" or "proposed"
+    if (type) {
+      artistQuery.confirmed = type === "proposed" ? false : true;
+    }
+
+    // Date range filtering
+    if (startDate || endDate) {
+      artistQuery.createdAt = {};
+      if (startDate) artistQuery.createdAt.$gte = new Date(startDate);
+      if (endDate) artistQuery.createdAt.$lte = new Date(endDate);
+    }
 
     // Fetch paginated artists and total count in parallel
     const [artists, totalArtists] = await Promise.all([
       Artist.find(artistQuery)
-        .sort({ [sortField]: parseInt(sortOrder, 10) }) // Dynamic sorting
+        .sort({ [sortBy]: order === "desc" ? -1 : 1 }) // Dynamic sorting
         .skip(skip)
-        .limit(limit),
+        .limit(pageSize),
       Artist.countDocuments(artistQuery), // Total matching artists
     ]);
 
-    // Prepare the data with related products
+    // Prepare the data with related products (TvAndRadio)
     const data = await Promise.all(
       artists.map(async (artist) => {
-        const products = await TvAndRadio.find({ artists: artist._id }).limit(
-          8
-        );
+        const products = await TvAndRadio.find({ artists: artist._id }).limit(8);
         return {
           artist,
           products,
@@ -51,8 +71,8 @@ router.get("/", async (req, res) => {
     return res.status(200).json({
       data,
       total: totalArtists,
-      currentPage: parseInt(curPage, 10),
-      totalPages: Math.ceil(totalArtists / limit),
+      currentPage: pageNumber,
+      totalPages: Math.ceil(totalArtists / pageSize),
       success: true,
     });
   } catch (err) {
@@ -60,6 +80,7 @@ router.get("/", async (req, res) => {
     return res.status(400).json({ success: false, error: err.message });
   }
 });
+
 
 router.get("/data", async (req, res) => {
   try {

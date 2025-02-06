@@ -20,32 +20,73 @@ router.get("/book", async (req, res) => {
   }
 });
 
+
 router.get("/", async (req, res) => {
   try {
-    const { rowsPerPage, curPage, filter } = req.query;
-    const start = parseInt(rowsPerPage, 10) * (parseInt(curPage, 10) - 1);
-    let products = [];
-    let allProducts = [];
-    if (filter) {
-      products = await Concert.find({ name: { $regex: filter, $options: "i" } })
-        .skip(start)
-        .limit(rowsPerPage);
-      allProducts = await Concert.find({
-        name: { $regex: filter, $options: "i" },
-      });
-    } else {
-      products = await Concert.find({}).skip(start).limit(rowsPerPage);
-      allProducts = await Concert.find({});
+    const {
+      sortBy = "createdAt",
+      order = "asc",
+      page = 1,
+      limit = 10,
+      search,
+      startDate,
+      endDate,
+    } = req.query;
+
+    // Convert pagination and sorting parameters to numbers
+    const pageNumber = parseInt(page, 10);
+    const pageSize = parseInt(limit, 10);
+    const sortOrder = order === "desc" ? -1 : 1;
+
+    // Build query conditions
+    const query = {};
+
+    // Search across name, description, and location
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+        { location: { $regex: search, $options: "i" } },
+      ];
     }
-    console.log("concerts:", products.length);
-    return res
-      .status(200)
-      .json({ products: products, all: allProducts.length, success: true });
+
+    // Apply date range filtering
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) query.createdAt.$gte = new Date(startDate);
+      if (endDate) query.createdAt.$lte = new Date(endDate);
+    }
+
+    // Get all products based on query
+    const allProducts = await Concert.find(query);
+
+    // Separate isFeatured concerts
+    const isFeatured = allProducts.filter((concert) => concert.isFeatured === true);
+
+    // Paginate non-featured concerts
+    const products = await Concert.find({ ...query, isFeatured: false })
+      .sort({ [sortBy]: sortOrder }) // Apply sorting
+      .skip((pageNumber - 1) * pageSize)
+      .limit(pageSize);
+
+    // Get total count for pagination metadata
+    const totalProducts = await Concert.countDocuments({ ...query, isFeatured: false });
+
+    return res.status(200).json({
+      isFeatured,
+      products,
+      totalProducts,
+      totalPages: Math.ceil(totalProducts / pageSize),
+      currentPage: pageNumber,
+      success: true,
+    });
   } catch (err) {
-    console.log(err);
-    return res.status(400).json({ success: false, error: err });
+    console.error(err);
+    return res.status(500).json({ success: false, error: err.message });
   }
 });
+
+
 
 router.post("/", async (req, res) => {
   try {

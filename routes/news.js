@@ -19,14 +19,65 @@ router.get(getNewsProposalsRoute, getNewsProposals);
 
 router.get("/all", async (req, res) => {
   try {
-    const products = await news.find();
-    console.log("news:", products.length);
-    return res.status(200).json({ news: products, success: true });
+    const {
+      sortBy = "createdAt",  // Default sort field
+      order = "asc",          // Default order
+      page = 1,               // Default page
+      limit = 10,             // Default limit
+      search,                 // Search query
+      startDate,              // Date range filtering start
+      endDate,                // Date range filtering end
+      type,                   // Filter type (confirmed or proposed)
+    } = req.query;
+
+    // Convert pagination and sorting parameters to numbers
+    const pageNumber = parseInt(page, 10);
+    const pageSize = parseInt(limit, 10);
+    const sortOrder = order === "desc" ? -1 : 1;
+
+    // Build query conditions
+    const query = {};
+
+    // Apply search on name, description, and location
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+        { tags: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    // Apply date range filtering if startDate or endDate is provided
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) query.createdAt.$gte = new Date(startDate);
+      if (endDate) query.createdAt.$lte = new Date(endDate);
+    }
+
+    // Fetch total count for pagination metadata
+    const totalNews = await news.countDocuments(query);
+
+    // Paginate and sort the news articles
+    const newsArticles = await news
+      .find(query)
+      .sort({ [sortBy]: sortOrder })
+      .skip((pageNumber - 1) * pageSize)
+      .limit(pageSize);
+
+    return res.status(200).json({
+      news: newsArticles,
+      totalNews,
+      totalPages: Math.ceil(totalNews / pageSize),
+      currentPage: pageNumber,
+      success: true,
+    });
   } catch (err) {
     console.log(err);
     return res.status(400).json({ success: false, error: err });
   }
 });
+
+
 
 router.get("/:id", async (req, res) => {
   try {
@@ -141,6 +192,47 @@ router.post("/", async (req, res) => {
     return res.status(500).json({ success: false, error: err.message });
   }
 });
+
+
+router.put("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const data = req.body;
+
+    console.log("Updating news ID:", id, "with data:", data);
+
+    // Find existing news article
+    const existingArticle = await news.findById(id);
+    if (!existingArticle) {
+      return res.status(404).json({
+        success: false,
+        message: "News article not found.",
+      });
+    }
+
+    // Prepare the update object with only provided fields
+    const updateData = { ...data };
+
+    // Convert `content` array to a JSON string only if it exists
+    if (data.content) {
+      updateData.content = Array.isArray(data.content)
+        ? JSON.stringify(data.content)
+        : data.content;
+    }
+
+    // Use $set to update only provided fields
+    const updatedArticle = await news.findByIdAndUpdate(id, { $set: updateData }, { 
+      new: true, 
+      runValidators: true 
+    });
+
+    return res.status(200).json({ success: true, data: updatedArticle });
+  } catch (err) {
+    console.error("Error:", err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 
 // router.put('/', async (req, res) => {
 //     try {
