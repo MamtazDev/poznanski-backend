@@ -93,7 +93,6 @@ router.get("/:id", async (req, res) => {
     if (!artist) {
       return res.status(404).json({ message: "Artist not found with the given ID." });
     }
-
     // Find all radio records where artistId matches this artist's ID
     const radios = await TvAndRadio.find({ artists: id });
     const album = await Album.find({ artists: id }).populate(["songs"]);

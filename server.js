@@ -16,6 +16,7 @@ const corsAllowList = [
   "http://localhost:3001",
   "http://localhost:3000",
   "http://localhost:8000",
+  "https://singular-crumble-583e8e.netlify.app"
 ];
 const corsOptions = {
   origin: function (origin, callback) {
