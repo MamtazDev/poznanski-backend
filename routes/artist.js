@@ -96,7 +96,7 @@ router.get("/:id", async (req, res) => {
 
     // Find all radio records where artistId matches this artist's ID
     const radios = await TvAndRadio.find({ artists: id });
-    const album = await Album.find({ artists: id });
+    const album = await Album.find({ artists: id }).populate(["songs"]);
 
     res.status(200).json({ artist, radios, album });
   } catch (error) {
@@ -104,6 +104,8 @@ router.get("/:id", async (req, res) => {
     res.status(500).json({ message: "Server error occurred while fetching the artist.", error: error.message });
   }
 });
+
+
 router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params; // Extract artist ID from URL
