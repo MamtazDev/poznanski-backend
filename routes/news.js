@@ -1,5 +1,4 @@
 const express = require("express");
-const { saveImage } = require("../consts/saveImage.js");
 const {
   createNewsProposal,
   newsProposalRules,
@@ -9,11 +8,9 @@ const news = require("../models/news.js");
 
 const router = express();
 
-// create proposal from unknown user:
 const newsProposalRoute = "/create/unknown";
 router.post(newsProposalRoute, newsProposalRules, createNewsProposal);
 
-// get all proposals from unknown:
 const getNewsProposalsRoute = "/get/unknown";
 router.get(getNewsProposalsRoute, getNewsProposals);
 
@@ -30,15 +27,12 @@ router.get("/all", async (req, res) => {
       type,                   // Filter type (confirmed or proposed)
     } = req.query;
 
-    // Convert pagination and sorting parameters to numbers
     const pageNumber = parseInt(page, 10);
     const pageSize = parseInt(limit, 10);
     const sortOrder = order === "desc" ? -1 : 1;
 
-    // Build query conditions
     const query = {};
 
-    // Apply search on name, description, and location
     if (search) {
       query.$or = [
         { title: { $regex: search, $options: "i" } },
@@ -47,14 +41,12 @@ router.get("/all", async (req, res) => {
       ];
     }
 
-    // Apply filter based on type (confirmed or proposed)
     if (!type) {
       query.confirmed = true;  // Default filter is confirmed news
     } else if (type === "proposed") {
       query.confirmed = false;  // Filter for proposed (unconfirmed) news
     }
 
-    // Apply date range filtering if startDate or endDate is provided
     if (startDate || endDate) {
       query.createdAt = {};
       if (startDate) query.createdAt.$gte = new Date(startDate);
@@ -105,6 +97,27 @@ router.get("/:id", async (req, res) => {
       return res
         .status(404)
         .json({ success: false, message: "News not found" });
+    }
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+router.delete("/:id", async (req, res) => {
+  try {
+    const { id } = req.params; // Use req.params to get the ID from the URL
+    const deletedNewsItem = await news.findByIdAndDelete(id); // Use findByIdAndDelete to remove a document by ID
+
+    if (deletedNewsItem) {
+      return res.status(200).json({
+        success: true,
+        message: "News item deleted successfully",
+        deletedNews: deletedNewsItem, // Optionally return the deleted news item
+      });
+    } else {
+      return res
+        .status(404)
+        .json({ success: false, message: "News item not found" });
     }
   } catch (err) {
     console.error(err);

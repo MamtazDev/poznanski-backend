@@ -104,6 +104,31 @@ router.get("/:id", async (req, res) => {
     res.status(500).json({ message: "Server error occurred while fetching the artist.", error: error.message });
   }
 });
+router.delete("/:id", async (req, res) => {
+  try {
+    const { id } = req.params; // Extract artist ID from URL
+
+    // Find and delete the artist by ID
+    const deletedArtist = await Artist.findByIdAndDelete(id);
+
+    if (!deletedArtist) {
+      return res.status(404).json({ message: "Artist not found with the given ID." });
+    }
+
+    // Optionally, delete related records like radios and albums if needed
+    await TvAndRadio.deleteMany({ artists: id });
+    await Album.deleteMany({ artists: id });
+
+    // Respond with a success message
+    res.status(200).json({
+      message: "Artist and related records deleted successfully.",
+      deletedArtist,
+    });
+  } catch (error) {
+    console.error(error); // For debugging purposes
+    res.status(500).json({ message: "Server error occurred while deleting the artist.", error: error.message });
+  }
+});
 
 
 router.get("/data", async (req, res) => {
