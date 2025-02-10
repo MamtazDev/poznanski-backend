@@ -14,7 +14,7 @@ const albumSchema = new Schema(
     artists: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
+        ref: "Artist",
         required: true,
       },
     ],

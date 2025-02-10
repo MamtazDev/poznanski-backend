@@ -56,7 +56,7 @@ exports.getAllAlbums = async (req, res) => {
 
     // Paginate and sort the albums
     const albums = await Album.find(query)
-      .populate(["songs", "userId"])
+      .populate(["songs", "userId", "artists" ])
       .sort({ [sortBy]: sortOrder })
       .skip((pageNumber - 1) * pageSize)
       .limit(pageSize);

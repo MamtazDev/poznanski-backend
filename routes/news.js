@@ -84,8 +84,7 @@ router.get("/:id", async (req, res) => {
     const newsItem = await news.findOne({ _id: id }); // Use findOne for a single document
     const relatedNews = await news
       .find({ _id: { $ne: id } }) // Exclude the current news item
-      .sort({ date: -1 }) // Sort by date in descending order
-      .limit(5); // Limit to 5 related news items
+
 
     if (newsItem) {
       return res.status(200).json({
