@@ -37,26 +37,7 @@ router.put("/users/:id", editUser);
 router.post("/register", userSignUpRules, userSignUp);
 router.post(
   "/login",
-
   userLoginRules,
-  // passport.authenticate('local', (err, user, info) => {
-  //     if (err) {
-  //       console.log('Authentication error:', err);
-  //       return next(err);
-  //     }
-  //     if (!user) {
-  //       console.log('Authentication failed:', info.message);
-  //       return res.status(401).json({ message: info.message });
-  //     }
-  //     req.logIn(user, (err) => {
-  //       if (err) {
-  //         console.log('Login error:', err);
-  //         return next(err);
-  //       }
-  //       console.log('Login successful:', user);
-  //       return res.json({ message: 'Login successful' });
-  //     });
-  //   })(req, res, next),
   userLogin
 );
 router.post("/logout", userLogout);

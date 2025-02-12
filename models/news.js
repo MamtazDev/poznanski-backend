@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-const { commentsSectionSchema } = require("./comment");
 
 const Schema = mongoose.Schema;
 
@@ -21,7 +20,6 @@ const newsSchema = new Schema(
     date: { type: Date },
     confirmed: { type: Boolean, default: false },
     confirmationToken: { type: String },
-    commentsSection: commentsSectionSchema,
   },
   { timestamps: true }
 );

@@ -5,6 +5,7 @@ const passport = require("passport");
 const { check, validationResult } = require("express-validator");
 const { generateAccessToken, generateRefreshToken } = require("../utils/token");
 const sendEmail = require("../utils/email");
+const crypto = require('crypto');
 require("dotenv").config();
 
 const userSignUpRules = [
@@ -118,6 +119,7 @@ const userSignUp = async (req, res) => {
     // );
 
     res.status(201).json({
+      verificationToken,
       message:
         "User registered. Please check your email for verification link.",
     });
@@ -130,28 +132,28 @@ const userSignUp = async (req, res) => {
 const userLogin = async (req, res) => {
   passport.authenticate("local", async (err, user, info) => {
     if (err) {
-      console.log("Authentication error:", err);
       return res.status(500).json({ message: "Internal Server Error" });
     }
     if (!user) {
-      console.log("Authentication failed:", info.message);
       return res.status(401).json({ message: info.message });
     }
+
+
+      // Check if user is verified
+      if (!user.isVerified) {
+        return res.status(403).json({ message: "User needs to verify their account first" });
+      }
+
     req.logIn(user, async (err) => {
       if (err) {
-        // console.log("Login error:", err);
         return res.status(500).json({ message: "Internal Server Error" });
       }
-      // console.log("Login successful:", user);
 
-      // Generate tokens
       const accessToken = generateAccessToken(user);
       const refreshToken = generateRefreshToken(user);
 
-      // Optionally, store the refresh token in the database or in-memory store
       await User.updateOne({ _id: user._id }, { refreshToken });
 
-      // Set tokens in cookies
       res.cookie("accessToken", accessToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
@@ -163,11 +165,10 @@ const userLogin = async (req, res) => {
         sameSite: "Strict",
       });
 
-      // Send a response with the accessToken and a success message
       return res.json({
         user,
         message: "Logged in successfully",
-        accessToken: accessToken, // Optionally send the accessToken in response for immediate use
+        accessToken: accessToken,
       });
     });
   })(req, res);
@@ -205,7 +206,9 @@ const userLogout = async (req, res) => {
   }
 };
 
+
 const verifyEmail = async (req, res) => {
+  // const {token} = req
   try {
     const decoded = jwt.verify(req.params.token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.id);
@@ -224,6 +227,7 @@ const verifyEmail = async (req, res) => {
 
     res.status(200).json({
       message: "Konto zweryfikowane pomyślnie, teraz możesz się zalogować",
+      user,
     });
   } catch (err) {
     console.error(err.message);
@@ -260,7 +264,7 @@ const forgotPassword = async (req, res) => {
 
     await user.save();
 
-    res.status(200).json({ message: "Password reset email sent." });
+    res.status(200).json({ resetToken, message: "Password reset email sent." });
   } catch (err) {
     console.error(err.message);
     res.status(500).send("Server error");

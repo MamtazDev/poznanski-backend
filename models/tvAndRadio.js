@@ -24,7 +24,7 @@ const tvAndRadioSchema = new Schema(
     date: { type: Date, required: true },
     confirmed: { type: Boolean, default: false },
     confirmationToken: { type: String },
-    commentsSection: { type: Object }, // Assuming commentsSectionSchema is defined elsewhere
+    commentsSection: { type: Object }, 
   },
   { timestamps: true }
 );

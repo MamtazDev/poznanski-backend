@@ -4,7 +4,6 @@ const Schema = mongoose.Schema;
 // Import related schemas if needed
 
 const TvAndRadio = require("./tvAndRadio");
-const { Comment, commentsSectionSchema } = require("./comment");
 
 // Define the schema
 const albumSchema = new Schema(
@@ -34,7 +33,6 @@ const albumSchema = new Schema(
     date: { type: Date, required: true },
     confirmed: { type: Boolean, default: false },
     confirmationToken: { type: String },
-    commentsSection: commentsSectionSchema, // Embedded comments schema
   },
   { timestamps: true }
 );
