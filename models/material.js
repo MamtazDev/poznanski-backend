@@ -8,8 +8,8 @@ const materialSchema = new Schema(
     description: { type: String, required: true }, // Description of the material
     youTube: { type: String, required: true }, // YouTube link for the material
     tags: { type: String, required: true }, // Tags related to the material
-    date: { type: Date, required: true }, // Date related to the material (e.g., creation or event date)
-    commentsSection: commentsSectionSchema, // Comments section schema, which you may have defined elsewhere
+    date: { type: Date, required: false }, // Date related to the material (e.g., creation or event date)
+    commentsSection: { type: Array, required: false }, // Comments section schema, which you may have defined elsewhere
   },
   { timestamps: true } // Automatically add createdAt and updatedAt fields
 );
