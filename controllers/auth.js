@@ -129,50 +129,62 @@ const userSignUp = async (req, res) => {
   }
 };
 
-const userLogin = async (req, res) => {
+const userLogin = async (req, res, next) => { // Add 'next' parameter
   passport.authenticate("local", async (err, user, info) => {
-    if (err) {
-      return res.status(500).json({ message: "Internal Server Error" });
-    }
-    if (!user) {
-      return res.status(401).json({ message: info.message });
-    }
+    try {
+      if (err) {
+        console.error("Authentication error:", err);
+        return res.status(500).json({ message: "Internal Server Error" });
+      }
 
+      if (!user) {
+        return res.status(401).json({ message: info?.message || "Invalid credentials" });
+      }
 
-      // Check if user is verified
       if (!user.isVerified) {
         return res.status(403).json({ message: "User needs to verify their account first" });
       }
 
-    req.logIn(user, async (err) => {
-      if (err) {
-        return res.status(500).json({ message: "Internal Server Error" });
-      }
+      req.logIn(user, async (err) => {
+        if (err) {
+          console.error("Login error:", err);
+          return res.status(500).json({ message: "Internal Server Error" });
+        }
 
-      const accessToken = generateAccessToken(user);
-      const refreshToken = generateRefreshToken(user);
+        try {
+          const accessToken = generateAccessToken(user);
+          const refreshToken = generateRefreshToken(user);
 
-      await User.updateOne({ _id: user._id }, { refreshToken });
+          await User.updateOne({ _id: user._id }, { refreshToken });
 
-      res.cookie("accessToken", accessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "Strict",
+          res.cookie("accessToken", accessToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "Strict",
+          });
+          res.cookie("refreshToken", refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "Strict",
+          });
+
+          return res.json({
+            user,
+            message: "Logged in successfully",
+            accessToken: accessToken,
+          });
+        } catch (tokenError) {
+          console.error("Token error:", tokenError);
+          return res.status(500).json({ message: "Error generating tokens" });
+        }
       });
-      res.cookie("refreshToken", refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "Strict",
-      });
-
-      return res.json({
-        user,
-        message: "Logged in successfully",
-        accessToken: accessToken,
-      });
-    });
-  })(req, res);
+    } catch (outerError) {
+      console.error("Outer error:", outerError);
+      next(outerError); // Pass errors to Express error handler
+    }
+  })(req, res, next); // Pass 'next' to passport.authenticate
 };
+
 
 const userLogout = async (req, res) => {
   console.log("Entering userLogout function");
@@ -187,24 +199,41 @@ const userLogout = async (req, res) => {
     await User.updateOne({ _id: req.user._id }, { refreshToken: null });
     console.log("User updated in database");
 
-    req.logout((err) => {
-      if (err) {
-        console.error("Error during logout:", err);
-        return res
-          .status(500)
-          .json({ message: "Error logging out", error: err });
-      }
+    // Check for the correct logout method
+    if (typeof req.logout === "function") {
+      req.logout((err) => {
+        if (err) {
+          console.error("Error during logout:", err);
+          return res.status(500).json({ message: "Error logging out" });
+        }
 
-      console.log("Clearing cookies");
-      res.clearCookie("accessToken");
-      res.clearCookie("refreshToken");
-      res.json({ message: "Logged out successfully" });
-    });
+        console.log("Clearing cookies");
+        res.clearCookie("accessToken");
+        res.clearCookie("refreshToken");
+        res.json({ message: "Logged out successfully" });
+      });
+    } else if (typeof req.logOut === "function") {
+      req.logOut((err) => {
+        if (err) {
+          console.error("Error during logOut:", err);
+          return res.status(500).json({ message: "Error logging out" });
+        }
+
+        console.log("Clearing cookies");
+        res.clearCookie("accessToken");
+        res.clearCookie("refreshToken");
+        res.json({ message: "Logged out successfully" });
+      });
+    } else {
+      console.error("Logout method not found on req");
+      res.status(500).json({ message: "Logout method not available" });
+    }
   } catch (err) {
     console.error("Error in userLogout:", err);
     res.status(500).json({ message: "Error logging out", error: err });
   }
 };
+
 
 
 const verifyEmail = async (req, res) => {
