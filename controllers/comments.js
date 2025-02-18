@@ -2,31 +2,66 @@ const { deleteCommentService } = require("../services/comment.service");
 const { getCommentsService } = require("../services/comment.service");
 const { createCommentService } = require("../services/comment.service");
 
+const CommentSection = {
+	NEWS: "News",
+	MATERIAL: "material",
+	ARTIST: "audio",
+	ARTICLE: "article",
+	EVENT: "event",
+  };
 
-  const createComment = async (req, res) => {
+  
+
+const createComment = async (req, res) => {
 	try {
-	  const newComment = await createCommentService(req.body);
+	  const { content, section, post, user } = req.body;
+  
+	  // Ensure section and post are provided
+	  if (!section || !post) {
+		return res.status(400).json({ message: "Section and post are required" });
+	  }
+  
+	  // Optionally validate that `section` is valid
+	  if (!Object.values(CommentSection).includes(section)) {
+		return res.status(400).json({ message: "Invalid section" });
+	  }
+  
+	  const newComment = await createCommentService({
+		content,
+		section,
+		post,
+		user,
+		...req.body,
+	  });
+  
 	  res.status(201).json({ message: "Comment created successfully", newComment });
 	} catch (error) {
 	  res.status(500).json({ error: error.message });
 	}
   };
+
+
   
   const getComments = async (req, res) => {
 	try {
-	  const { section } = req.query; // Access the section from query params
+	  const { section, post } = req.query;
+	  console.log("section:",section, post );
   
-	  // Ensure section exists before querying
-	  if (!section) {
-		return res.status(400).json({ message: "Section is required" });
+	  if (!section || !post) {
+		return res.status(400).json({ message: "Section and post are required" });
 	  }
   
-	  const comments = await getCommentsService(section); // Pass the section to the service
-	  res.status(200).json(comments); // Send the response with comments
+	  if (!Object.values(CommentSection).includes(section)) {
+		return res.status(400).json({ message: "Invalid section" });
+	  }
+  
+	  const comments = await getCommentsService({ section, post });
+	  res.status(200).json(comments);
 	} catch (error) {
 	  res.status(500).json({ error: error.message });
 	}
   };
+  
   
   const deleteComment = async (req, res) => {
 	try {
