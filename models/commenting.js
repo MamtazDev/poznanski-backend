@@ -10,6 +10,7 @@ const CommentSection = {
   EVENT: "event",
 };
 
+
 const CommentSchema = new Schema(
   {
     content: { type: String, required: true },
