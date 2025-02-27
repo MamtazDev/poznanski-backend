@@ -8,6 +8,7 @@ const concertSchema = new Schema({
   description: { type: String, default: "" },
   location: { type: String, default: "" },
   link: { type: String, default: "" },
+  ticket: { type: String, default: "" },
   isFeatured: { type: Boolean, default: false },
   timeframe: {
     start: { type: Date, required: true },

@@ -4,9 +4,15 @@ const User = require("../models/user");
 const passport = require("passport");
 const { check, validationResult } = require("express-validator");
 const { generateAccessToken, generateRefreshToken } = require("../utils/token");
-const sendEmail = require("../utils/email");
+// const sendEmail = require("../utils/email");
 const crypto = require('crypto');
+const EmailService = require("../utils/emailService");
+const { createAccount } = require("../utils/EmailTemplate/CreateAccount");
 require("dotenv").config();
+
+
+const emailService = new EmailService(); // Create an instance
+
 
 const userSignUpRules = [
   check("nickname").not().isEmpty().withMessage("Nickname is required"),
@@ -109,7 +115,7 @@ const userSignUp = async (req, res) => {
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );
-    const verificationUrl = `http://localhost:3001/login/verify-email/${verificationToken}`;
+    const verificationUrl = `http://localhost:3000/verify-email/${verificationToken}`;
 
     await user.save();
     // await sendEmail(
@@ -117,6 +123,14 @@ const userSignUp = async (req, res) => {
     //   "POZNANSKIRAP.COM - weryfikacja adresu email",
     //   `Siema! Proszę zweryfikuj swój email na portalu poznanskirap.com klikając w link: ${verificationUrl}`
     // );
+
+    await emailService.sendEmail({
+      to: user.email,
+      subject: `Your listing is now`,
+      text: 'Thank you for creating listing with Book The Party',
+      // html: `Siema! Proszę zweryfikuj swój email na portalu poznanskirap.com klikając w link: ${verificationUrl}`
+      html: createAccount(user.email, verificationUrl,)
+    })
 
     res.status(201).json({
       verificationToken,
@@ -160,7 +174,8 @@ const userLogin = async (req, res, next) => { // Add 'next' parameter
           res.cookie("accessToken", accessToken, {
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
-            sameSite: "Strict",
+            sameSite: "None",
+            maxAge: 3600000, // Cookie expiration time
           });
           res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
@@ -188,7 +203,7 @@ const userLogin = async (req, res, next) => { // Add 'next' parameter
 
 const userLogout = async (req, res) => {
   console.log("Entering userLogout function");
-
+  
   if (!req.user) {
     console.error("User not authenticated");
     return res.status(401).json({ message: "User not authenticated" });
@@ -209,6 +224,7 @@ const userLogout = async (req, res) => {
 
         console.log("Clearing cookies");
         res.clearCookie("accessToken");
+        res.clearCookie("access_token");
         res.clearCookie("refreshToken");
         res.json({ message: "Logged out successfully" });
       });
@@ -220,7 +236,7 @@ const userLogout = async (req, res) => {
         }
 
         console.log("Clearing cookies");
-        res.clearCookie("accessToken");
+        res.clearCookie("access_token");
         res.clearCookie("refreshToken");
         res.json({ message: "Logged out successfully" });
       });
@@ -241,6 +257,7 @@ const verifyEmail = async (req, res) => {
   try {
     const decoded = jwt.verify(req.params.token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.id);
+    console.log("user", user)
 
     if (!user) {
       return res.status(400).json({ message: "Nie ma takiego użytkownika" });
