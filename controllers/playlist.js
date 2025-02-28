@@ -120,3 +120,18 @@ exports.getAllPlaylistsWithPagination = async (req, res) => {
       .json({ message: `Failed to retrieve playlists: ${error.message}` });
   }
 };
+
+exports.getPlaylistsWithPagination = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const player = await Playlist.findOne({ _id: id }); 
+
+    res.status(200).json({
+      data: player,
+    });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: `Failed to retrieve playlists: ${error.message}` });
+  }
+};
