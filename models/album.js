@@ -29,7 +29,7 @@ const albumSchema = new Schema(
       ref: "User",
       required: true,
     },
-    tags: { type: String, required: true },
+    tags: [{ type: String, required: true }],
     date: { type: Date, required: true },
     confirmed: { type: Boolean, default: false },
     confirmationToken: { type: String },
