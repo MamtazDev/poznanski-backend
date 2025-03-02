@@ -12,11 +12,12 @@ const passport = require("./utils/strategies");
 const helmet = require("helmet");
 const csrf = require("csurf");
 const cookieParser = require("cookie-parser");
+const { SSE } = require("./sse/sseServer");
 const corsAllowList = [
   "http://localhost:3001",
   "http://localhost:3000",
   "http://localhost:8000",
-  "https://singular-crumble-583e8e.netlify.app"
+  "https://singular-crumble-583e8e.netlify.app",
 ];
 const corsOptions = {
   origin: function (origin, callback) {
@@ -119,6 +120,8 @@ app.get("/api", (request, response) => {
     data: "u hit node API!",
   });
 });
+
+app.get("/api/sse-connect/:userId", SSE.initialize);
 
 // routes protection
 const limiter = rateLimit({

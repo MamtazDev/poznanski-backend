@@ -5,14 +5,13 @@ const passport = require("passport");
 const { check, validationResult } = require("express-validator");
 const { generateAccessToken, generateRefreshToken } = require("../utils/token");
 // const sendEmail = require("../utils/email");
-const crypto = require('crypto');
+const crypto = require("crypto");
 const EmailService = require("../utils/emailService");
 const { createAccount } = require("../utils/EmailTemplate/CreateAccount");
+const sendEmail = require("../utils/email");
 require("dotenv").config();
 
-
 const emailService = new EmailService(); // Create an instance
-
 
 const userSignUpRules = [
   check("nickname").not().isEmpty().withMessage("Nickname is required"),
@@ -94,7 +93,9 @@ const refreshToken = async (req, res) => {
 const userSignUp = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({ message: errors.array()[0].msg });
+    return res
+      .status(400)
+      .json({ success: false, message: errors.array()[0].msg });
   }
   const { nickname, email, password, role } = req.body;
 
@@ -102,7 +103,9 @@ const userSignUp = async (req, res) => {
     let user = await User.findOne({ $or: [{ email }, { nickname }] });
 
     if (user) {
-      return res.status(400).json({ message: "Taki użytkownik już istnieje" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Taki użytkownik już istnieje" });
     }
 
     user = new User({ nickname, email, password, role: "user" });
@@ -118,32 +121,38 @@ const userSignUp = async (req, res) => {
     const verificationUrl = `http://localhost:3000/verify-email/${verificationToken}`;
 
     await user.save();
-    // await sendEmail(
-    //   user.email,
-    //   "POZNANSKIRAP.COM - weryfikacja adresu email",
-    //   `Siema! Proszę zweryfikuj swój email na portalu poznanskirap.com klikając w link: ${verificationUrl}`
-    // );
+    await sendEmail(
+      user.email,
+      "POZNANSKIRAP.COM - weryfikacja adresu email",
+      "Thank you for creating listing with POZNANSKIRAP.COM",
+      createAccount(user.email, verificationUrl)
 
-    await emailService.sendEmail({
-      to: user.email,
-      subject: `Your listing is now`,
-      text: 'Thank you for creating listing with Book The Party',
-      // html: `Siema! Proszę zweryfikuj swój email na portalu poznanskirap.com klikając w link: ${verificationUrl}`
-      html: createAccount(user.email, verificationUrl,)
-    })
+      // "POZNANSKIRAP.COM - weryfikacja adresu email",
+      // `Siema! Proszę zweryfikuj swój email na portalu poznanskirap.com klikając w link: ${verificationUrl}`
+    );
+
+    // await emailService.sendEmail({
+    //   to: user.email,
+    //   subject: `Your listing is now`,
+    //   text: 'Thank you for creating listing with Book The Party',
+    //   // html: `Siema! Proszę zweryfikuj swój email na portalu poznanskirap.com klikając w link: ${verificationUrl}`
+    //   html: createAccount(user.email, verificationUrl,)
+    // })
 
     res.status(201).json({
-      verificationToken,
+      success: true,
+      verificationToken: verificationToken,
       message:
         "User registered. Please check your email for verification link.",
     });
   } catch (err) {
     console.error(err.message);
-    res.status(500).send("Server error");
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
-const userLogin = async (req, res, next) => { // Add 'next' parameter
+const userLogin = async (req, res, next) => {
+  // Add 'next' parameter
   passport.authenticate("local", async (err, user, info) => {
     try {
       if (err) {
@@ -152,11 +161,15 @@ const userLogin = async (req, res, next) => { // Add 'next' parameter
       }
 
       if (!user) {
-        return res.status(401).json({ message: info?.message || "Invalid credentials" });
+        return res
+          .status(401)
+          .json({ message: info?.message || "Invalid credentials" });
       }
 
       if (!user.isVerified) {
-        return res.status(403).json({ message: "User needs to verify their account first" });
+        return res
+          .status(403)
+          .json({ message: "User needs to verify their account first" });
       }
 
       req.logIn(user, async (err) => {
@@ -200,10 +213,9 @@ const userLogin = async (req, res, next) => { // Add 'next' parameter
   })(req, res, next); // Pass 'next' to passport.authenticate
 };
 
-
 const userLogout = async (req, res) => {
   console.log("Entering userLogout function");
-  
+
   if (!req.user) {
     console.error("User not authenticated");
     return res.status(401).json({ message: "User not authenticated" });
@@ -250,34 +262,39 @@ const userLogout = async (req, res) => {
   }
 };
 
-
-
 const verifyEmail = async (req, res) => {
   // const {token} = req
   try {
     const decoded = jwt.verify(req.params.token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.id);
-    console.log("user", user)
+    console.log("user", user);
 
     if (!user) {
-      return res.status(400).json({ message: "Nie ma takiego użytkownika" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Nie ma takiego użytkownika" });
     }
     if (user.isVerified) {
       return res
         .status(400)
-        .json({ message: "To konto jest już zweryfikowane" });
+        .json({ success: false, message: "To konto jest już zweryfikowane" });
     }
 
     user.isVerified = true;
     await user.save();
 
     res.status(200).json({
+      success: true,
       message: "Konto zweryfikowane pomyślnie, teraz możesz się zalogować",
       user,
     });
   } catch (err) {
     console.error(err.message);
-    res.status(400).json({ errors: [{ msg: "Invalid token" }] });
+    res.status(400).json({
+      success: false,
+      message: "Invalid token",
+      errors: [{ msg: "Invalid token" }],
+    });
   }
 };
 

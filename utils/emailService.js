@@ -3,17 +3,16 @@ const dotenv = require("dotenv");
 
 dotenv.config();
 
-
 class EmailService {
   constructor() {
     this.transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST, // e.g., 'smtp.gmail.com'
-      port: parseInt(process.env.SMTP_PORT || '587', 10), // Typically 587 for TLS or 465 for SSL
-      secure: process.env.SMTP_SECURE === 'true', // Use true for 465, false for 587
+      port: parseInt(process.env.SMTP_PORT || "587", 10), // Typically 587 for TLS or 465 for SSL
+      secure: process.env.SMTP_SECURE === "true", // Use true for 465, false for 587
       auth: {
         user: process.env.EMAIL_USER, // Your email address
-        pass: process.env.EMAIL_PASS // Your email password or app-specific password
-      }
+        pass: process.env.EMAIL_PASS, // Your email password or app-specific password
+      },
     });
 
     // this.transporter.verify((error, success) => {
@@ -25,10 +24,6 @@ class EmailService {
     //   });
   }
 
- 
-
-  
-
   // Method to send an email
   async sendEmail({ to, subject, text, html }) {
     try {
@@ -37,13 +32,13 @@ class EmailService {
         to,
         subject,
         text,
-        html
+        html,
       };
 
       const info = await this.transporter.sendMail(mailOptions);
-      console.log('Email sent:', info);
+      console.log("Email sent:", info);
     } catch (error) {
-      console.error('Error sending email:', error);
+      console.error("Error sending email:", error);
       throw error;
     }
   }

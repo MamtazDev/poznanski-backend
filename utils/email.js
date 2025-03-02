@@ -1,7 +1,6 @@
 const nodemailer = require("nodemailer");
 require("dotenv").config();
 
-
 const transporter = nodemailer.createTransport({
   host: "rapgrinder.nazwa.pl",
   port: 465,
@@ -9,9 +8,8 @@ const transporter = nodemailer.createTransport({
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
-  }
+  },
 });
-
 
 transporter.verify((error, success) => {
   if (error) {
@@ -21,14 +19,15 @@ transporter.verify((error, success) => {
   }
 });
 
-const sendEmail = async (to, subject, text) => {
+const sendEmail = async (to, subject, text, html) => {
   console.log("Sending email to:", to);
-  
+
   const mailOptions = {
     from: process.env.EMAIL_USER,
     to,
     subject,
     text,
+    html,
   };
 
   try {

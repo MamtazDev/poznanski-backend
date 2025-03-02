@@ -10,17 +10,25 @@ const getCommentsService = async ({ section, post }) => {
     console.log("section:", section, "post:", post);
 
     if (section && post) {
-      const comments = await Comment.find({ section, post, parentComment: null, isDeleted: false })
-        .populate("user")  // Populate user details
+      const comments = await Comment.find({
+        section,
+        post,
+        parentComment: null,
+        isDeleted: false,
+      })
+        .populate("user") // Populate user details
         .sort({ createdAt: -1 });
 
       const commentsWithReplies = await Promise.all(
         comments.map(async (comment) => {
           const plainComment = comment.toObject();
-          const replies = await Comment.find({ parentComment: comment._id, isDeleted: false })
+          const replies = await Comment.find({
+            parentComment: comment._id,
+            isDeleted: false,
+          })
             .populate("user")
             .sort({ createdAt: 1 });
-            plainComment.replies = replies;
+          plainComment.replies = replies;
           return plainComment;
         })
       );
@@ -79,19 +87,20 @@ const getCommentsService = async ({ section, post }) => {
     //   return commentsWithReplies;
     // }
 
-
     return await Comment.find({ isDeleted: false })
       .populate("user")
       .sort({ createdAt: -1 });
-
   } catch (error) {
     throw new Error(`Error fetching comments: ${error.message}`);
   }
 };
 
-
 const deleteCommentService = async (id) => {
-  return await Comment.findByIdAndUpdate(id, { isDeleted: true }, { new: true });
+  return await Comment.findByIdAndUpdate(
+    id,
+    { isDeleted: true },
+    { new: true }
+  );
 };
 
 module.exports = {
