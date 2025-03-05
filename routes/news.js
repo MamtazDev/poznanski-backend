@@ -75,6 +75,69 @@ router.get("/all", async (req, res) => {
     return res.status(400).json({ success: false, error: err });
   }
 });
+router.get("/:email", async (req, res) => {
+  try {
+    const {
+      sortBy = "createdAt",  // Default sort field
+      order = "asc",          // Default order
+      page = 1,               // Default page
+      limit = 10,             // Default limit
+      search,                 // Search query
+      startDate,              // Date range filtering start
+      endDate,                // Date range filtering end
+      type,                   // Filter type (confirmed or proposed)
+    } = req.query;
+
+    const pageNumber = parseInt(page, 10);
+    const pageSize = parseInt(limit, 10);
+    const sortOrder = order === "desc" ? -1 : 1;
+
+    const email = req.params.email;  // Get email from route parameter
+    const query = { email };  // Filter news by the given email
+
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: "i" } },
+        { description: { $regex: search, $options: "i" } },
+        { tags: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    if (!type) {
+      query.confirmed = true;  // Default filter is confirmed news
+    } else if (type === "proposed") {
+      query.confirmed = false;  // Filter for proposed (unconfirmed) news
+    }
+
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) query.createdAt.$gte = new Date(startDate);
+      if (endDate) query.createdAt.$lte = new Date(endDate);
+    }
+
+    // Fetch total count for pagination metadata
+    const totalNews = await news.countDocuments(query);
+
+    // Paginate and sort the news articles based on email first, then by other criteria
+    const newsArticles = await news
+      .find(query)
+      .sort({ email: 1, [sortBy]: sortOrder })  // Sort first by email, then by the selected field
+      .skip((pageNumber - 1) * pageSize)
+      .limit(pageSize);
+
+    return res.status(200).json({
+      news: newsArticles,
+      totalNews,
+      totalPages: Math.ceil(totalNews / pageSize),
+      currentPage: pageNumber,
+      success: true,
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(400).json({ success: false, error: err });
+  }
+});
+
 
 
 

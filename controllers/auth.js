@@ -438,4 +438,5 @@ module.exports = {
   resetPasswordRules,
   getUsers,
   editUser,
+  deleteUser
 };

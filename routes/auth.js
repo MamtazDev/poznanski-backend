@@ -17,6 +17,7 @@ const {
   verifyAuth,
   getUsers,
   editUser,
+  deleteUser,
 } = require("../controllers/auth");
 const user = require("../models/user");
 
@@ -32,6 +33,7 @@ router.post("/refresh-token", refreshToken);
 router.get("/users", getUsers);
 router.get("/users", getUsers);
 router.put("/users/:id", editUser);
+router.delete("/users/:id", deleteUser);
 
 // User Routes
 router.post("/register", userSignUpRules, userSignUp);
