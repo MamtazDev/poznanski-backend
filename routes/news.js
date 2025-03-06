@@ -75,7 +75,8 @@ router.get("/all", async (req, res) => {
     return res.status(400).json({ success: false, error: err });
   }
 });
-router.get("/:email", async (req, res) => {
+router.get("/profile/:email", async (req, res) => {
+
   try {
     const {
       sortBy = "createdAt",  // Default sort field
@@ -142,8 +143,9 @@ router.get("/:email", async (req, res) => {
 
 
 router.get("/:id", async (req, res) => {
+  const { id } = req.params; // Use req.params to get the ID from the URL
+  console.log("Going on single news wrap:", id )
   try {
-    const { id } = req.params; // Use req.params to get the ID from the URL
     const newsItem = await news.findOne({ _id: id }); // Use findOne for a single document
     const relatedNews = await news
       .find({ _id: { $ne: id } }) // Exclude the current news item
