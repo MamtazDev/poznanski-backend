@@ -84,7 +84,7 @@ router.get("/profile/:email", async (req, res) => {
       page = 1,               // Default page
       limit = 10,             // Default limit
       search,                 // Search query
-      startDate,              // Date range filtering start
+      startDate,              // Date range filtering start 
       endDate,                // Date range filtering end
       type,                   // Filter type (confirmed or proposed)
     } = req.query;
