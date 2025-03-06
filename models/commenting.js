@@ -28,6 +28,18 @@ const CommentSchema = new Schema(
       ref: "Comment",
       default: null,
     },
+
+    likes: {
+      type: [Object],
+      user: {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+        required: true,
+      },
+      date: { type: Date, default: Date.now, required: true },
+      default: [],
+      required: true,
+    },
     isDeleted: { type: Boolean, default: false },
   },
   { timestamps: true }

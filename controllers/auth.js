@@ -408,10 +408,7 @@ const deleteUser = async (req, res) => {
 
   try {
     // Find the user by ID and update with new data
-    const updatedUser = await User.findByIdAndUpdate(userId, updatedData, {
-      new: true, // Return the updated document
-      runValidators: true, // Ensure validations are run on the updated data
-    });
+    const updatedUser = await User.findByIdAndDelete(userId);
 
     if (!updatedUser) {
       return res.status(404).json({ message: "User not found" }); // User not found

@@ -272,7 +272,7 @@ const getCommentsByPostId = async (req, res) => {
 
     // Fetch all comments related to the post (including all replies)
     const comments = await Comment.find({ post: postId })
-      .populate("user", "name") // Populate user details
+      // .populate("user", "name") // Populate user details
       .sort({ _id: -1 })
       .lean();
 
@@ -315,10 +315,49 @@ const getCommentsByPostId = async (req, res) => {
   }
 };
 
+const likeComment = async (req, res) => {
+  try {
+    const { commentId } = req.params;
+    const { userId } = req.body;
+
+    const comment = await Comment.findById({ _id: commentId });
+    if (!comment) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Comment not found" });
+    }
+
+    const userIndex = comment.likes.findIndex(
+      (like) => like.user.toString() === userId
+    );
+    if (userIndex !== -1) {
+      // User already liked the comment, remove the like
+      comment.likes.splice(userIndex, 1);
+    } else {
+      // User hasn't liked the comment, add a new like
+      comment.likes.push({ user: userId, date: new Date() });
+    }
+
+    await comment.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Comment liked/unliked successfully",
+      data: comment,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Error liking comment",
+      error: error.message,
+    });
+  }
+};
 module.exports = {
   createComment,
   getComments,
   deleteComment,
   deleteCommentById,
   getCommentsByPostId,
+  likeComment,
 };

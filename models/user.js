@@ -10,6 +10,7 @@ const UserSchema = new mongoose.Schema({
   refreshToken: { type: String },
   profilePicture: { type: String },
   isVerified: { type: Boolean, default: false },
+  isBlocked: { type: Boolean, default: false },
   resetPasswordToken: { type: String },
   resetPasswordExpires: { type: Date },
 });

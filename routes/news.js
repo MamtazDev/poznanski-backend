@@ -147,26 +147,35 @@ router.get("/:id", async (req, res) => {
   console.log("Going on single news wrap:", id )
   try {
     const newsItem = await news.findOne({ _id: id }); // Use findOne for a single document
-    const relatedNews = await news
-      .find({ _id: { $ne: id } }) // Exclude the current news item
-
-
-    if (newsItem) {
-      return res.status(200).json({
-        news: newsItem,
-        relatedNews,
-        success: true,
-      });
-    } else {
-      return res
-        .status(404)
-        .json({ success: false, message: "News not found" });
+    if (!newsItem) {
+      return res.status(404).json({ success: false, message: "News not found" });
     }
+
+    // Extract and split tags
+    const tagsArray = newsItem.tags
+      ? newsItem.tags.split(",").map(tag => tag.trim())
+      : [];
+
+    let relatedNews = [];
+
+    if (tagsArray.length > 0) {
+      relatedNews = await news.find({
+        _id: { $ne: id },
+        tags: { $regex: tagsArray.join("|"), $options: "i" }, // Match any tag, case-insensitive
+      });
+    }
+
+    return res.status(200).json({
+      news: newsItem,
+      relatedNews,
+      success: true,
+    });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ success: false, error: err.message });
   }
 });
+
 router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params; // Use req.params to get the ID from the URL
