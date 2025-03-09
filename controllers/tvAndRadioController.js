@@ -78,8 +78,31 @@ exports.getTvAndRadioById = async (req, res) => {
     const record = await TvAndRadio.findById(req.params.id).populate(
       "artists userId"
     );
+    // console.log("record", record)
     if (!record) return res.status(404).json({ error: "Record not found" });
-    res.status(200).json(record);
+
+     // Extract and split tags
+     const tagsArray = record.tags
+     ? record.tags.split(",").map((tag) => tag.trim())
+     : [];
+
+   let relatedNews = [];
+
+   if (tagsArray.length > 0) {
+     relatedNews = await TvAndRadio.find({
+       _id: { $ne: req.params.id },
+       tags: { $regex: tagsArray.join("|"), $options: "i" }, // Match any tag, case-insensitive
+     });
+   }
+
+
+
+    // res.status(200).json(record);
+    res.status(200).json({
+      record: record,
+      relatedNews,
+      success: true,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

@@ -15,14 +15,14 @@ exports.createAlbum = async (req, res) => {
 exports.getAllAlbums = async (req, res) => {
   try {
     const {
-      sortBy = "createdAt",  // Default sort field
-      order = "asc",          // Default order
-      page = 1,               // Default page
-      limit = 10,             // Default limit
-      search,                 // Search query
-      startDate,              // Date range filtering start
-      endDate,                // Date range filtering end
-      type,                   // Filter type (confirmed or proposed)
+      sortBy = "createdAt", // Default sort field
+      order = "asc", // Default order
+      page = 1, // Default page
+      limit = 10, // Default limit
+      search, // Search query
+      startDate, // Date range filtering start
+      endDate, // Date range filtering end
+      type, // Filter type (confirmed or proposed)
     } = req.query;
 
     // Convert pagination and sorting parameters to numbers
@@ -42,8 +42,6 @@ exports.getAllAlbums = async (req, res) => {
       ];
     }
 
- 
-
     // Apply date range filtering if startDate or endDate is provided
     if (startDate || endDate) {
       query.createdAt = {};
@@ -56,7 +54,7 @@ exports.getAllAlbums = async (req, res) => {
 
     // Paginate and sort the albums
     const albums = await Album.find(query)
-      .populate(["songs", "userId", "artists" ])
+      .populate(["songs", "userId", "artists"])
       .sort({ [sortBy]: sortOrder })
       .skip((pageNumber - 1) * pageSize)
       .limit(pageSize);
@@ -85,6 +83,56 @@ exports.getAlbumById = async (req, res) => {
     res.status(200).json(album);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+};
+
+exports.getRelatedAlbums = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { page = 1, limit = 10 } = req.query;
+
+    const pageNumber = parseInt(page, 10);
+    const pageSize = parseInt(limit, 10);
+
+    const albumItem = await Album.findById(id);
+
+    if (!albumItem) {
+      return res
+        .status(404)
+        .json({ success: false, message: "item not found" });
+    }
+
+    const tags = albumItem?.tags[0] || "";
+
+    const tagsArray = tags ? tags?.split(",").map((tag) => tag.trim()) : [];
+
+    let relatedAlbums = [];
+    let totalRelated = 0;
+
+    if (tagsArray.length > 0) {
+      const query = {
+        _id: { $ne: id },
+        tags: { $regex: tagsArray.join("|"), $options: "i" },
+      };
+
+      totalRelated = await Album.countDocuments(query);
+
+      relatedAlbums = await Album.find(query)
+        .populate("userId", "nickname")
+        .skip((pageNumber - 1) * pageSize)
+        .limit(pageSize);
+    }
+
+    return res.status(200).json({
+      relatedAlbums,
+      totalRelated,
+      totalPages: Math.ceil(totalRelated / pageSize),
+      currentPage: pageNumber,
+      success: true,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, error: err.message });
   }
 };
 

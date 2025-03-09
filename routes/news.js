@@ -17,14 +17,14 @@ router.get(getNewsProposalsRoute, getNewsProposals);
 router.get("/all", async (req, res) => {
   try {
     const {
-      sortBy = "createdAt",  // Default sort field
-      order = "asc",          // Default order
-      page = 1,               // Default page
-      limit = 10,             // Default limit
-      search,                 // Search query
-      startDate,              // Date range filtering start
-      endDate,                // Date range filtering end
-      type,                   // Filter type (confirmed or proposed)
+      sortBy = "createdAt", // Default sort field
+      order = "asc", // Default order
+      page = 1, // Default page
+      limit = 10, // Default limit
+      search, // Search query
+      startDate, // Date range filtering start
+      endDate, // Date range filtering end
+      type, // Filter type (confirmed or proposed)
     } = req.query;
 
     const pageNumber = parseInt(page, 10);
@@ -42,9 +42,9 @@ router.get("/all", async (req, res) => {
     }
 
     if (!type) {
-      query.confirmed = true;  // Default filter is confirmed news
+      query.confirmed = true; // Default filter is confirmed news
     } else if (type === "proposed") {
-      query.confirmed = false;  // Filter for proposed (unconfirmed) news
+      query.confirmed = false; // Filter for proposed (unconfirmed) news
     }
 
     if (startDate || endDate) {
@@ -76,25 +76,24 @@ router.get("/all", async (req, res) => {
   }
 });
 router.get("/profile/:email", async (req, res) => {
-
   try {
     const {
-      sortBy = "createdAt",  // Default sort field
-      order = "asc",          // Default order
-      page = 1,               // Default page
-      limit = 10,             // Default limit
-      search,                 // Search query
-      startDate,              // Date range filtering start 
-      endDate,                // Date range filtering end
-      type,                   // Filter type (confirmed or proposed)
+      sortBy = "createdAt", // Default sort field
+      order = "asc", // Default order
+      page = 1, // Default page
+      limit = 10, // Default limit
+      search, // Search query
+      startDate, // Date range filtering start
+      endDate, // Date range filtering end
+      type, // Filter type (confirmed or proposed)
     } = req.query;
 
     const pageNumber = parseInt(page, 10);
     const pageSize = parseInt(limit, 10);
     const sortOrder = order === "desc" ? -1 : 1;
 
-    const email = req.params.email;  // Get email from route parameter
-    const query = { email };  // Filter news by the given email
+    const email = req.params.email; // Get email from route parameter
+    const query = { email }; // Filter news by the given email
 
     if (search) {
       query.$or = [
@@ -105,9 +104,9 @@ router.get("/profile/:email", async (req, res) => {
     }
 
     if (!type) {
-      query.confirmed = true;  // Default filter is confirmed news
+      query.confirmed = true; // Default filter is confirmed news
     } else if (type === "proposed") {
-      query.confirmed = false;  // Filter for proposed (unconfirmed) news
+      query.confirmed = false; // Filter for proposed (unconfirmed) news
     }
 
     if (startDate || endDate) {
@@ -122,7 +121,7 @@ router.get("/profile/:email", async (req, res) => {
     // Paginate and sort the news articles based on email first, then by other criteria
     const newsArticles = await news
       .find(query)
-      .sort({ email: 1, [sortBy]: sortOrder })  // Sort first by email, then by the selected field
+      .sort({ email: 1, [sortBy]: sortOrder }) // Sort first by email, then by the selected field
       .skip((pageNumber - 1) * pageSize)
       .limit(pageSize);
 
@@ -139,21 +138,20 @@ router.get("/profile/:email", async (req, res) => {
   }
 });
 
-
-
-
 router.get("/:id", async (req, res) => {
   const { id } = req.params; // Use req.params to get the ID from the URL
-  console.log("Going on single news wrap:", id )
+  console.log("Going on single news wrap:", id);
   try {
     const newsItem = await news.findOne({ _id: id }); // Use findOne for a single document
     if (!newsItem) {
-      return res.status(404).json({ success: false, message: "News not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "News not found" });
     }
 
     // Extract and split tags
     const tagsArray = newsItem.tags
-      ? newsItem.tags.split(",").map(tag => tag.trim())
+      ? newsItem.tags.split(",").map((tag) => tag.trim())
       : [];
 
     let relatedNews = [];
@@ -286,7 +284,6 @@ router.post("/", async (req, res) => {
   }
 });
 
-
 router.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -314,10 +311,14 @@ router.put("/:id", async (req, res) => {
     }
 
     // Use $set to update only provided fields
-    const updatedArticle = await news.findByIdAndUpdate(id, { $set: updateData }, { 
-      new: true, 
-      runValidators: true 
-    });
+    const updatedArticle = await news.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
 
     return res.status(200).json({ success: true, data: updatedArticle });
   } catch (err) {
@@ -325,7 +326,6 @@ router.put("/:id", async (req, res) => {
     return res.status(500).json({ success: false, error: err.message });
   }
 });
-
 
 // router.put('/', async (req, res) => {
 //     try {
@@ -557,5 +557,55 @@ router.put("/:id", async (req, res) => {
 //         console.log(err);
 //     }
 // })
+
+router.get("/:id/related", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { page = 1, limit = 10 } = req.query;
+
+    const pageNumber = parseInt(page, 10);
+    const pageSize = parseInt(limit, 10);
+
+    const newsItem = await news.findById(id);
+
+    if (!newsItem) {
+      return res
+        .status(404)
+        .json({ success: false, message: "News item not found" });
+    }
+
+    const tagsArray = newsItem.tags
+      ? newsItem.tags.split(",").map((tag) => tag.trim())
+      : [];
+
+    let relatedNews = [];
+    let totalRelated = 0;
+
+    if (tagsArray.length > 0) {
+      const query = {
+        _id: { $ne: id },
+        tags: { $regex: tagsArray.join("|"), $options: "i" },
+      };
+
+      totalRelated = await news.countDocuments(query);
+
+      relatedNews = await news
+        .find(query)
+        .skip((pageNumber - 1) * pageSize)
+        .limit(pageSize);
+    }
+
+    return res.status(200).json({
+      relatedNews,
+      totalRelated,
+      totalPages: Math.ceil(totalRelated / pageSize),
+      currentPage: pageNumber,
+      success: true,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
 
 module.exports = router;
