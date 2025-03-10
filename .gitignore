@@ -2,7 +2,6 @@
 node_modules/
 
 # Ignore environment configuration file
-.env
 
 # Ignore log files
 *.log
@@ -12,3 +11,4 @@ node_modules/
 /dist/
 public/assets/img/*
 package-lock.json
+config.bat

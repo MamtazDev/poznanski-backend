@@ -10,6 +10,7 @@ const EmailService = require("../utils/emailService");
 const { createAccount } = require("../utils/EmailTemplate/CreateAccount");
 const sendEmail = require("../utils/email");
 require("dotenv").config();
+const fs = require("fs");
 
 const emailService = new EmailService(); // Create an instance
 
@@ -379,12 +380,37 @@ const getUsers = async (req, res) => {
   }
 };
 
+const removeFileByPath = async (path = "") => {
+  try {
+    if (path) {
+      fs.unlink(path, (err) => {
+        if (err) {
+          console.error("Error deleting file:", err);
+        }
+      });
+    }
+
+    return true;
+  } catch (error) {
+    console.log(error);
+    return false;
+  }
+};
+
 const editUser = async (req, res) => {
   const userId = req.params.id; // Extract user ID from request parameters
   const updatedData = req.body; // Extract data to update from request body
   console.log("updatedData", updatedData, userId);
 
   try {
+    const user = await User.findById(userId);
+    if (user.profilePicture) {
+      const url = user.profilePicture;
+      const path = url.match(/:\/\/[^/]+\/(.+)/)[1];
+      if (path) {
+        await removeFileByPath(path);
+      }
+    }
     // Find the user by ID and update with new data
     const updatedUser = await User.findByIdAndUpdate(userId, updatedData, {
       new: true, // Return the updated document
@@ -435,5 +461,5 @@ module.exports = {
   resetPasswordRules,
   getUsers,
   editUser,
-  deleteUser
+  deleteUser,
 };

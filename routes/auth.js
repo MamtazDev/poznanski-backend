@@ -37,11 +37,7 @@ router.delete("/users/:id", deleteUser);
 
 // User Routes
 router.post("/register", userSignUpRules, userSignUp);
-router.post(
-  "/login",
-  userLoginRules,
-  userLogin
-);
+router.post("/login", userLoginRules, userLogin);
 router.post("/logout", userLogout);
 router.post("/verify-email/:token", verifyEmail);
 router.post("/forgot-password", forgetPasswordRules, forgotPassword);
@@ -71,6 +67,5 @@ router.get(
     userLogin(req, res);
   }
 );
-
 
 module.exports = router;

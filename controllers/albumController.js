@@ -76,7 +76,14 @@ exports.getAlbumById = async (req, res) => {
   try {
     const album = await Album.findById(req.params.id)
       .populate("artists userId") // Populate references for artists and user
-      .populate("songs"); // Populate songs (if referenced)
+      .populate({
+        path: "songs",
+        populate: [
+          { path: "artists" }, // Populate the artists inside songs
+          { path: "userId" }, // Populate the userId inside songs
+        ],
+      });
+
     if (!album) {
       return res.status(404).json({ error: "Album not found" });
     }
@@ -94,7 +101,7 @@ exports.getRelatedAlbums = async (req, res) => {
     const pageNumber = parseInt(page, 10);
     const pageSize = parseInt(limit, 10);
 
-    const albumItem = await Album.findById(id);
+    const albumItem = await Album.findOne({ _id: id });
 
     if (!albumItem) {
       return res
@@ -119,6 +126,13 @@ exports.getRelatedAlbums = async (req, res) => {
 
       relatedAlbums = await Album.find(query)
         .populate("userId", "nickname")
+        .populate({
+          path: "songs",
+          populate: [
+            { path: "artists" }, // Populate the artists inside songs
+            { path: "userId" }, // Populate the userId inside songs
+          ],
+        })
         .skip((pageNumber - 1) * pageSize)
         .limit(pageSize);
     }
